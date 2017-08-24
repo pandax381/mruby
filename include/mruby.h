@@ -1025,7 +1025,9 @@ MRB_API mrb_bool mrb_obj_equal(mrb_state*, mrb_value, mrb_value);
 MRB_API mrb_bool mrb_equal(mrb_state *mrb, mrb_value obj1, mrb_value obj2);
 MRB_API mrb_value mrb_convert_to_integer(mrb_state *mrb, mrb_value val, int base);
 MRB_API mrb_value mrb_Integer(mrb_state *mrb, mrb_value val);
+#ifndef MRB_WITHOUT_FLOAT
 MRB_API mrb_value mrb_Float(mrb_state *mrb, mrb_value val);
+#endif
 MRB_API mrb_value mrb_inspect(mrb_state *mrb, mrb_value obj);
 MRB_API mrb_bool mrb_eql(mrb_state *mrb, mrb_value obj1, mrb_value obj2);
 

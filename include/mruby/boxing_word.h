@@ -7,6 +7,10 @@
 #ifndef MRUBY_BOXING_WORD_H
 #define MRUBY_BOXING_WORD_H
 
+#if defined(MRB_WITUOUT_FLOAT)
+# error MRB_WITUOUT_FLOAT cannot be used with MRB_WORD_BOXING.
+#endif
+
 #if defined(MRB_INT16)
 # error MRB_INT16 is too small for MRB_WORD_BOXING.
 #endif

@@ -26,6 +26,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include <mrbconf.h>
+#ifdef MRB_WITHOUT_FLOAT
+void *___dummy;
+#else
 #include <limits.h>
 #include <string.h>
 #include <stdint.h>
@@ -369,3 +373,5 @@ mrb_float_to_str(mrb_state *mrb, mrb_value flo, const char *fmt)
   }
   return f.str;
 }
+
+#endif

@@ -131,6 +131,7 @@ get_pool_block_size(mrb_state *mrb, mrb_irep *irep)
       }
       break;
 
+#ifndef MRB_WITHOUT_FLOAT
     case MRB_TT_FLOAT:
       str = mrb_float_to_str(mrb, irep->pool[pool_no], MRB_FLOAT_FMT);
       {
@@ -139,6 +140,7 @@ get_pool_block_size(mrb_state *mrb, mrb_irep *irep)
         size += (size_t)len;
       }
       break;
+#endif
 
     case MRB_TT_STRING:
       {
@@ -177,10 +179,12 @@ write_pool_block(mrb_state *mrb, mrb_irep *irep, uint8_t *buf)
       str = mrb_fixnum_to_str(mrb, irep->pool[pool_no], 10);
       break;
 
+#ifndef MRB_WITHOUT_FLOAT
     case MRB_TT_FLOAT:
       cur += uint8_to_bin(IREP_TT_FLOAT, cur); /* data type */
       str = mrb_float_to_str(mrb, irep->pool[pool_no], MRB_FLOAT_FMT);
       break;
+#endif
 
     case MRB_TT_STRING:
       cur += uint8_to_bin(IREP_TT_STRING, cur); /* data type */

@@ -4,9 +4,12 @@
 ** See Copyright Notice in mruby.h
 */
 
+#include <mrbconf.h>
+#ifndef MRB_WITHOUT_FLOAT
 #include <float.h>
-#include <limits.h>
 #include <math.h>
+#endif
+#include <limits.h>
 #include <stdlib.h>
 
 #include <mruby.h>
@@ -25,6 +28,7 @@
 #define MRB_FLO_TO_STR_FMT "%.14g"
 #endif
 
+#ifndef MRB_WITHOUT_FLOAT
 MRB_API mrb_float
 mrb_to_flo(mrb_state *mrb, mrb_value val)
 {
@@ -38,7 +42,9 @@ mrb_to_flo(mrb_state *mrb, mrb_value val)
   }
   return mrb_float(val);
 }
+#endif
 
+#ifndef MRB_WITHOUT_FLOAT
 /*
  * call-seq:
  *
@@ -80,6 +86,7 @@ num_pow(mrb_state *mrb, mrb_value x)
   d = pow(mrb_to_flo(mrb, x), mrb_to_flo(mrb, y));
   return mrb_float_value(mrb, d);
 }
+#endif
 
 /* 15.2.8.3.4  */
 /* 15.2.9.3.4  */
@@ -95,7 +102,11 @@ num_pow(mrb_state *mrb, mrb_value x)
 mrb_value
 mrb_num_div(mrb_state *mrb, mrb_value x, mrb_value y)
 {
+#ifdef MRB_WITHOUT_FLOAT
+  return mrb_fixnum_value(mrb_fixnum(x) / mrb_fixnum(y));
+#else
   return mrb_float_value(mrb, mrb_to_flo(mrb, x) / mrb_to_flo(mrb, y));
+#endif
 }
 
 /* 15.2.9.3.19(x) */
@@ -109,12 +120,20 @@ mrb_num_div(mrb_state *mrb, mrb_value x, mrb_value y)
 static mrb_value
 num_div(mrb_state *mrb, mrb_value x)
 {
+#ifdef MRB_WITHOUT_FLOAT
+  mrb_int y;
+
+  mrb_get_args(mrb, "i", &y);
+  return mrb_fixnum_value(mrb_fixnum(x) / y);
+#else
   mrb_float y;
 
   mrb_get_args(mrb, "f", &y);
   return mrb_float_value(mrb, mrb_to_flo(mrb, x) / y);
+#endif
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 /********************************************************************
  *
  * Document-class: Float
@@ -229,6 +248,7 @@ flo_mod(mrb_state *mrb, mrb_value x)
   flodivmod(mrb, mrb_float(x), mrb_to_flo(mrb, y), 0, &mod);
   return mrb_float_value(mrb, mod);
 }
+#endif
 
 /* 15.2.8.3.16 */
 /*
@@ -252,6 +272,7 @@ fix_eql(mrb_state *mrb, mrb_value x)
   return mrb_bool_value(mrb_fixnum(x) == mrb_fixnum(y));
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 static mrb_value
 flo_eql(mrb_state *mrb, mrb_value x)
 {
@@ -412,6 +433,7 @@ flo_rshift(mrb_state *mrb, mrb_value x)
   mrb_get_args(mrb, "i", &width);
   return flo_shift(mrb, x, width);
 }
+#endif
 
 /* 15.2.8.3.18 */
 /*
@@ -421,24 +443,37 @@ flo_rshift(mrb_state *mrb, mrb_value x)
  * Returns a hash code for this float.
  */
 static mrb_value
+#ifdef MRB_WITHOUT_FLOAT
+fix_hash(mrb_state *mrb, mrb_value num)
+#else
 flo_hash(mrb_state *mrb, mrb_value num)
+#endif
 {
+#ifdef MRB_WITHOUT_FLOAT
+  mrb_int d;
+#else
   mrb_float d;
+#endif
   char *c;
   size_t i;
   mrb_int hash;
 
+#ifdef MRB_WITHOUT_FLOAT
+  d = mrb_fixnum(num);
+#else
   d = (mrb_float)mrb_fixnum(num);
   /* normalize -0.0 to 0.0 */
   if (d == 0) d = 0.0;
+#endif
   c = (char*)&d;
-  for (hash=0,i=0; i<sizeof(mrb_float); i++) {
+  for (hash=0,i=0; i<sizeof(d); i++) {
     hash = (hash * 971) ^ (unsigned char)c[i];
   }
   if (hash < 0) hash = -hash;
   return mrb_fixnum_value(hash);
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 /* 15.2.9.3.13 */
 /*
  * call-seq:
@@ -668,6 +703,8 @@ flo_nan_p(mrb_state *mrb, mrb_value num)
 {
   return mrb_bool_value(isnan(mrb_float(num)));
 }
+#endif
+
 
 /*
  * Document-class: Integer
@@ -699,17 +736,26 @@ mrb_fixnum_mul(mrb_state *mrb, mrb_value x, mrb_value y)
   mrb_int a;
 
   a = mrb_fixnum(x);
-  if (mrb_fixnum_p(y)) {
+#ifndef MRB_WITHOUT_FLOAT
+  if (mrb_fixnum_p(y))
+#endif
+  {
     mrb_int b, c;
 
     if (a == 0) return x;
     b = mrb_fixnum(y);
     if (mrb_int_mul_overflow(a, b, &c)) {
+#ifdef MRB_WITHOUT_FLOAT
+      /* ignore */
+#else
       return mrb_float_value(mrb, (mrb_float)a * (mrb_float)b);
+#endif
     }
     return mrb_fixnum_value(c);
   }
+#ifndef MRB_WITHOUT_FLOAT
   return mrb_float_value(mrb, (mrb_float)a * mrb_to_flo(mrb, y));
+#endif
 }
 
 /* 15.2.8.3.3  */
@@ -777,21 +823,30 @@ fix_mod(mrb_state *mrb, mrb_value x)
 
   mrb_get_args(mrb, "o", &y);
   a = mrb_fixnum(x);
-  if (mrb_fixnum_p(y)) {
+#ifndef MRB_WITHOUT_FLOAT
+  if (mrb_fixnum_p(y))
+#endif
+  {
     mrb_int b, mod;
 
     if ((b=mrb_fixnum(y)) == 0) {
+#ifdef MRB_WITHOUT_FLOAT
+      return mrb_fixnum_value(0);
+#else
       return mrb_float_value(mrb, NAN);
+#endif
     }
     fixdivmod(mrb, a, b, 0, &mod);
     return mrb_fixnum_value(mod);
   }
+#ifndef MRB_WITHOUT_FLOAT
   else {
     mrb_float mod;
 
     flodivmod(mrb, (mrb_float)a, mrb_to_flo(mrb, y), 0, &mod);
     return mrb_float_value(mrb, mod);
   }
+#endif
 }
 
 /*
@@ -807,16 +862,24 @@ fix_divmod(mrb_state *mrb, mrb_value x)
 
   mrb_get_args(mrb, "o", &y);
 
-  if (mrb_fixnum_p(y)) {
+#ifndef MRB_WITHOUT_FLOAT
+  if (mrb_fixnum_p(y))
+#endif
+  {
     mrb_int div, mod;
 
     if (mrb_fixnum(y) == 0) {
+#ifdef MRB_WITHOUT_FLOAT
+      return mrb_assoc_new(mrb, mrb_fixnum_value(0), mrb_fixnum_value(0));
+#else
       return mrb_assoc_new(mrb, mrb_float_value(mrb, INFINITY),
         mrb_float_value(mrb, NAN));
+#endif
     }
     fixdivmod(mrb, mrb_fixnum(x), mrb_fixnum(y), &div, &mod);
     return mrb_assoc_new(mrb, mrb_fixnum_value(div), mrb_fixnum_value(mod));
   }
+#ifndef MRB_WITHOUT_FLOAT
   else {
     mrb_float div, mod;
     mrb_value a, b;
@@ -826,8 +889,10 @@ fix_divmod(mrb_state *mrb, mrb_value x)
     b = mrb_float_value(mrb, mod);
     return mrb_assoc_new(mrb, a, b);
   }
+#endif
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 static mrb_value
 flo_divmod(mrb_state *mrb, mrb_value x)
 {
@@ -842,6 +907,7 @@ flo_divmod(mrb_state *mrb, mrb_value x)
   b = mrb_float_value(mrb, mod);
   return mrb_assoc_new(mrb, a, b);
 }
+#endif
 
 /* 15.2.8.3.7  */
 /*
@@ -864,8 +930,10 @@ fix_equal(mrb_state *mrb, mrb_value x)
   switch (mrb_type(y)) {
   case MRB_TT_FIXNUM:
     return mrb_bool_value(mrb_fixnum(x) == mrb_fixnum(y));
+#ifndef MRB_WITHOUT_FLOAT
   case MRB_TT_FLOAT:
     return mrb_bool_value((mrb_float)mrb_fixnum(x) == mrb_float(y));
+#endif
   default:
     return mrb_false_value();
   }
@@ -890,6 +958,11 @@ fix_rev(mrb_state *mrb, mrb_value num)
   return mrb_fixnum_value(~val);
 }
 
+#ifdef MRB_WITHOUT_FLOAT
+#define bit_op(x,y,op1,op2) do {\
+  return mrb_fixnum_value(mrb_fixnum(x) op2 mrb_fixnum(y));\
+} while(0)
+#else
 static mrb_value flo_and(mrb_state *mrb, mrb_value x);
 static mrb_value flo_or(mrb_state *mrb, mrb_value x);
 static mrb_value flo_xor(mrb_state *mrb, mrb_value x);
@@ -897,6 +970,7 @@ static mrb_value flo_xor(mrb_state *mrb, mrb_value x);
   if (mrb_fixnum_p(y)) return mrb_fixnum_value(mrb_fixnum(x) op2 mrb_fixnum(y));\
   return flo_ ## op1(mrb, mrb_float_value(mrb, mrb_fixnum(x)));\
 } while(0)
+#endif
 
 /* 15.2.8.3.9  */
 /*
@@ -955,23 +1029,36 @@ static mrb_value
 lshift(mrb_state *mrb, mrb_int val, mrb_int width)
 {
   if (width < 0) {              /* mrb_int overflow */
+#ifdef MRB_WITHOUT_FLOAT
+    return mrb_fixnum_value(0);
+#else
     return mrb_float_value(mrb, INFINITY);
+#endif
   }
   if (val > 0) {
     if ((width > NUMERIC_SHIFT_WIDTH_MAX) ||
         (val   > (MRB_INT_MAX >> width))) {
+#ifdef MRB_WITHOUT_FLOAT
+      return mrb_fixnum_value(-1);
+#else
       goto bit_overflow;
+#endif
     }
   }
   else {
     if ((width > NUMERIC_SHIFT_WIDTH_MAX) ||
         (val   < (MRB_INT_MIN >> width))) {
+#ifdef MRB_WITHOUT_FLOAT
+      return mrb_fixnum_value(0);
+#else
       goto bit_overflow;
+#endif
     }
   }
 
   return mrb_fixnum_value(val << width);
 
+#ifndef MRB_WITHOUT_FLOAT
 bit_overflow:
   {
     mrb_float f = (mrb_float)val;
@@ -980,6 +1067,7 @@ bit_overflow:
     }
     return mrb_float_value(mrb, f);
   }
+#endif
 }
 
 static mrb_value
@@ -1047,6 +1135,7 @@ fix_rshift(mrb_state *mrb, mrb_value x)
   return rshift(val, width);
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 /* 15.2.8.3.23 */
 /*
  *  call-seq:
@@ -1103,6 +1192,7 @@ mrb_flo_to_fixnum(mrb_state *mrb, mrb_value x)
   }
   return mrb_fixnum_value(z);
 }
+#endif
 
 mrb_value
 mrb_fixnum_plus(mrb_state *mrb, mrb_value x, mrb_value y)
@@ -1110,17 +1200,26 @@ mrb_fixnum_plus(mrb_state *mrb, mrb_value x, mrb_value y)
   mrb_int a;
 
   a = mrb_fixnum(x);
-  if (mrb_fixnum_p(y)) {
+#ifndef MRB_WITHOUT_FLOAT
+  if (mrb_fixnum_p(y))
+#endif
+  {
     mrb_int b, c;
 
     if (a == 0) return y;
     b = mrb_fixnum(y);
     if (mrb_int_add_overflow(a, b, &c)) {
+#ifdef MRB_WITHOUT_FLOAT
+      /* ignore */
+#else
       return mrb_float_value(mrb, (mrb_float)a + (mrb_float)b);
+#endif
     }
     return mrb_fixnum_value(c);
   }
+#ifndef MRB_WITHOUT_FLOAT
   return mrb_float_value(mrb, (mrb_float)a + mrb_to_flo(mrb, y));
+#endif
 }
 
 /* 15.2.8.3.1  */
@@ -1147,16 +1246,25 @@ mrb_fixnum_minus(mrb_state *mrb, mrb_value x, mrb_value y)
   mrb_int a;
 
   a = mrb_fixnum(x);
-  if (mrb_fixnum_p(y)) {
+#ifndef MRB_WITHOUT_FLOAT
+  if (mrb_fixnum_p(y))
+#endif
+  {
     mrb_int b, c;
 
     b = mrb_fixnum(y);
     if (mrb_int_sub_overflow(a, b, &c)) {
+#ifdef MRB_WITHOUT_FLOAT
+      /* ignore */
+#else
       return mrb_float_value(mrb, (mrb_float)a - (mrb_float)b);
+#endif
     }
     return mrb_fixnum_value(c);
   }
+#ifndef MRB_WITHOUT_FLOAT
   return mrb_float_value(mrb, (mrb_float)a - mrb_to_flo(mrb, y));
+#endif
 }
 
 /* 15.2.8.3.2  */
@@ -1248,18 +1356,31 @@ static mrb_value
 num_cmp(mrb_state *mrb, mrb_value self)
 {
   mrb_value other;
+#ifdef MRB_WITHOUT_FLOAT
+  mrb_int x, y;
+#else
   mrb_float x, y;
+#endif
 
   mrb_get_args(mrb, "o", &other);
 
+#ifdef MRB_WITHOUT_FLOAT
+  x = mrb_fixnum(self);
+#else
   x = mrb_to_flo(mrb, self);
+#endif
   switch (mrb_type(other)) {
   case MRB_TT_FIXNUM:
+#ifdef MRB_WITHOUT_FLOAT
+    y = mrb_fixnum(other);
+    break;
+#else
     y = (mrb_float)mrb_fixnum(other);
     break;
   case MRB_TT_FLOAT:
     y = mrb_float(other);
     break;
+#endif
   default:
     return mrb_nil_value();
   }
@@ -1272,6 +1393,7 @@ num_cmp(mrb_state *mrb, mrb_value self)
   }
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 /* 15.2.9.3.1  */
 /*
  * call-seq:
@@ -1288,17 +1410,23 @@ flo_plus(mrb_state *mrb, mrb_value x)
   mrb_get_args(mrb, "o", &y);
   return mrb_float_value(mrb, mrb_float(x) + mrb_to_flo(mrb, y));
 }
+#endif
 
 /* ------------------------------------------------------------------------*/
 void
 mrb_init_numeric(mrb_state *mrb)
 {
-  struct RClass *numeric, *integer, *fixnum, *fl;
+  struct RClass *numeric, *integer, *fixnum;
+#ifndef MRB_WITHOUT_FLOAT
+  struct RClass *fl;
+#endif
 
   /* Numeric Class */
   numeric = mrb_define_class(mrb, "Numeric",  mrb->object_class);                /* 15.2.7 */
 
+#ifndef MRB_WITHOUT_FLOAT
   mrb_define_method(mrb, numeric, "**",       num_pow,         MRB_ARGS_REQ(1));
+#endif
   mrb_define_method(mrb, numeric, "/",        num_div,         MRB_ARGS_REQ(1)); /* 15.2.8.3.4  */
   mrb_define_method(mrb, numeric, "quo",      num_div,         MRB_ARGS_REQ(1)); /* 15.2.7.4.5 (x) */
   mrb_define_method(mrb, numeric, "<=>",      num_cmp,         MRB_ARGS_REQ(1)); /* 15.2.9.3.6  */
@@ -1328,12 +1456,17 @@ mrb_init_numeric(mrb_state *mrb)
   mrb_define_method(mrb, fixnum,  "<<",       fix_lshift,      MRB_ARGS_REQ(1)); /* 15.2.8.3.12 */
   mrb_define_method(mrb, fixnum,  ">>",       fix_rshift,      MRB_ARGS_REQ(1)); /* 15.2.8.3.13 */
   mrb_define_method(mrb, fixnum,  "eql?",     fix_eql,         MRB_ARGS_REQ(1)); /* 15.2.8.3.16 */
+#ifdef MRB_WITHOUT_FLOAT
+  mrb_define_method(mrb, fixnum,  "hash",     fix_hash,        MRB_ARGS_NONE()); /* 15.2.8.3.18 */
+#else
   mrb_define_method(mrb, fixnum,  "hash",     flo_hash,        MRB_ARGS_NONE()); /* 15.2.8.3.18 */
   mrb_define_method(mrb, fixnum,  "to_f",     fix_to_f,        MRB_ARGS_NONE()); /* 15.2.8.3.23 */
+#endif
   mrb_define_method(mrb, fixnum,  "to_s",     fix_to_s,        MRB_ARGS_NONE()); /* 15.2.8.3.25 */
   mrb_define_method(mrb, fixnum,  "inspect",  fix_to_s,        MRB_ARGS_NONE());
   mrb_define_method(mrb, fixnum,  "divmod",   fix_divmod,      MRB_ARGS_REQ(1)); /* 15.2.8.3.30 (x) */
 
+#ifndef MRB_WITHOUT_FLOAT
   /* Float Class */
   mrb->float_class = fl = mrb_define_class(mrb, "Float", numeric);                 /* 15.2.9 */
   MRB_SET_INSTANCE_TT(fl, MRB_TT_FLOAT);
@@ -1365,10 +1498,11 @@ mrb_init_numeric(mrb_state *mrb)
   mrb_define_method(mrb, fl,      "inspect",   flo_to_s,       MRB_ARGS_NONE());
   mrb_define_method(mrb, fl,      "nan?",      flo_nan_p,      MRB_ARGS_NONE());
 
-#ifdef INFINITY
+# ifdef INFINITY
   mrb_define_const(mrb, fl, "INFINITY", mrb_float_value(mrb, INFINITY));
-#endif
-#ifdef NAN
+# endif
+# ifdef NAN
   mrb_define_const(mrb, fl, "NAN", mrb_float_value(mrb, NAN));
+# endif
 #endif
 }

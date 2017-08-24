@@ -12,8 +12,12 @@
 #include <mruby/string.h>
 #include <mruby/variable.h>
 
+#ifdef MRB_WITHOUT_FLOAT
+mrb_int mrb_fixnum_id(mrb_int f);
+#else
 /* a function to get hash value of a float number */
 mrb_int mrb_float_id(mrb_float f);
+#endif
 
 static inline khint_t
 mrb_hash_ht_hash_func(mrb_state *mrb, mrb_value key)
@@ -39,12 +43,17 @@ mrb_hash_ht_hash_func(mrb_state *mrb, mrb_value key)
     return kh_int_hash_func(mrb, h);
 
   case MRB_TT_FIXNUM:
+#ifdef MRB_WITHOUT_FLOAT
+    h = (khint_t)mrb_fixnum_id(mrb_fixnum(key));
+    return kh_int_hash_func(mrb, h);
+#else
     h = (khint_t)mrb_float_id((mrb_float)mrb_fixnum(key));
     return kh_int_hash_func(mrb, h);
 
   case MRB_TT_FLOAT:
     h = (khint_t)mrb_float_id(mrb_float(key));
     return kh_int_hash_func(mrb, h);
+#endif
 
   default:
     hv = mrb_funcall(mrb, key, "hash", 0);
@@ -70,12 +79,15 @@ mrb_hash_ht_hash_equal(mrb_state *mrb, mrb_value a, mrb_value b)
     switch (mrb_type(b)) {
     case MRB_TT_FIXNUM:
       return mrb_fixnum(a) == mrb_fixnum(b);
+#ifndef MRB_WITHOUT_FLOAT
     case MRB_TT_FLOAT:
       return (mrb_float)mrb_fixnum(a) == mrb_float(b);
+#endif
     default:
       return FALSE;
     }
 
+#ifndef MRB_WITHOUT_FLOAT
   case MRB_TT_FLOAT:
     switch (mrb_type(b)) {
     case MRB_TT_FIXNUM:
@@ -85,6 +97,7 @@ mrb_hash_ht_hash_equal(mrb_state *mrb, mrb_value a, mrb_value b)
     default:
       return FALSE;
     }
+#endif
 
   default:
     return mrb_eql(mrb, a, b);

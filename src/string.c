@@ -8,7 +8,10 @@
 # define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 
+#include <mrbconf.h>
+#ifndef MRB_WITHOUT_FLOAT
 #include <float.h>
+#endif
 #include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -2299,6 +2302,7 @@ mrb_str_to_i(mrb_state *mrb, mrb_value self)
   return mrb_str_to_inum(mrb, self, base, FALSE);
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 MRB_API double
 mrb_cstr_to_dbl(mrb_state *mrb, const char * p, mrb_bool badcheck)
 {
@@ -2402,6 +2406,7 @@ mrb_str_to_f(mrb_state *mrb, mrb_value self)
 {
   return mrb_float_value(mrb, mrb_str_to_dbl(mrb, self, FALSE));
 }
+#endif
 
 /* 15.2.10.5.40 */
 /*
@@ -2765,7 +2770,9 @@ mrb_init_string(mrb_state *mrb)
   mrb_define_method(mrb, s, "slice",           mrb_str_aref_m,          MRB_ARGS_ANY());  /* 15.2.10.5.34 */
   mrb_define_method(mrb, s, "split",           mrb_str_split_m,         MRB_ARGS_ANY());  /* 15.2.10.5.35 */
 
+#ifndef MRB_WITHOUT_FLOAT
   mrb_define_method(mrb, s, "to_f",            mrb_str_to_f,            MRB_ARGS_NONE()); /* 15.2.10.5.38 */
+#endif
   mrb_define_method(mrb, s, "to_i",            mrb_str_to_i,            MRB_ARGS_ANY());  /* 15.2.10.5.39 */
   mrb_define_method(mrb, s, "to_s",            mrb_str_to_s,            MRB_ARGS_NONE()); /* 15.2.10.5.40 */
   mrb_define_method(mrb, s, "to_str",          mrb_str_to_s,            MRB_ARGS_NONE());
@@ -2776,6 +2783,7 @@ mrb_init_string(mrb_state *mrb)
   mrb_define_method(mrb, s, "bytes",           mrb_str_bytes,           MRB_ARGS_NONE());
 }
 
+#ifndef MRB_WITHOUT_FLOAT
 /*
  *	Source code for the "strtod" library procedure.
  *
@@ -3020,3 +3028,4 @@ done:
     }
     return fraction;
 }
+#endif

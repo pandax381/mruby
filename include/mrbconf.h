@@ -28,6 +28,9 @@
 /* add -DMRB_USE_FLOAT to use float instead of double for floating point numbers */
 //#define MRB_USE_FLOAT
 
+/* without floating point numbers; conflict with MRB_NAN_BOXING or MRB_WORD_BOXING */
+//#define MRB_WITHOUT_FLOAT
+
 /* add -DMRB_INT16 to use 16bit integer for mrb_int; conflict with MRB_INT64 */
 //#define MRB_INT16
 

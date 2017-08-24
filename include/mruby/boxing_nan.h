@@ -7,6 +7,10 @@
 #ifndef MRUBY_BOXING_NAN_H
 #define MRUBY_BOXING_NAN_H
 
+#ifdef MRB_WITUOUT_FLOAT
+# error ---->> MRB_NAN_BOXING and MRB_WITUOUT_FLOAT <<----
+#endif
+
 #ifdef MRB_USE_FLOAT
 # error ---->> MRB_NAN_BOXING and MRB_USE_FLOAT conflict <<----
 #endif

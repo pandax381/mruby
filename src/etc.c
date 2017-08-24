@@ -87,10 +87,14 @@ mrb_obj_to_sym(mrb_state *mrb, mrb_value name)
 }
 
 MRB_API mrb_int
-mrb_float_id(mrb_float f)
+#ifdef MRB_WITHOUT_FLOAT
+mrb_fixnum_id(mrb_int v)
+#else
+mrb_float_id(mrb_float v)
+#endif
 {
-  const char *p = (const char*)&f;
-  int len = sizeof(f);
+  const char *p = (const char*)&v;
+  int len = sizeof(v);
   mrb_int id = 0;
 
   while (len--) {
@@ -122,10 +126,15 @@ mrb_obj_id(mrb_value obj)
     return MakeID(1);
   case MRB_TT_SYMBOL:
     return MakeID(mrb_symbol(obj));
+#ifdef MRB_WITHOUT_FLOAT
+  case MRB_TT_FIXNUM:
+    return MakeID2(mrb_fixnum_id(mrb_fixnum(obj)), MRB_TT_FIXNUM);
+#else
   case MRB_TT_FIXNUM:
     return MakeID2(mrb_float_id((mrb_float)mrb_fixnum(obj)), MRB_TT_FLOAT);
   case MRB_TT_FLOAT:
     return MakeID(mrb_float_id(mrb_float(obj)));
+#endif
   case MRB_TT_STRING:
   case MRB_TT_OBJECT:
   case MRB_TT_CLASS:
